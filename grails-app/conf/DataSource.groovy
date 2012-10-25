@@ -2,7 +2,7 @@ dataSource {
     pooled = true
     driverClassName = "com.mysql.jdbc.Driver"
     username = "root"
-    password = "888999"
+    password = ""
 
     //Avoid mysql database interupt the connection
     properties {
@@ -41,15 +41,6 @@ environments {
             username = "root"
             password = "f5iscool"
             url = "jdbc:mysql://localhost/refreshbpm?useUnicode=true&characterEncoding=utf-8"  //?autoReconnect=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
-        }
-    }
-    bees {
-        dataSource {
-            dbCreate = "update"
-            url = "jdbc:mysql://ec2-23-21-211-172.compute-1.amazonaws.com/refreshbpm?useUnicode=true&characterEncoding=utf-8"  //?autoReconnect=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
-            username = "f5"
-            password = "f5iscool"
-
         }
     }
 }

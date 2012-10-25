@@ -97,8 +97,3 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 }
-
-
-tomcat.deploy.username="manager"
-tomcat.deploy.password="iasolution"
-tomcat.deploy.url="http://ec2-54-248-109-242.ap-northeast-1.compute.amazonaws.com/manager"
