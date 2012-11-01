@@ -194,37 +194,48 @@ class ParserService {
     }
 
     def parseFlickrByApi() {
-         _parseFlickrByApi('text')
+         _parseFlickrByApi('text',true)
     }
     def parseFlickrByApi2() {
-         _parseFlickrByApi('tags')
+         _parseFlickrByApi('tags',true)
     }
 
-    private _parseFlickrByApi(def searchField) {
+    def parseFlickrNoGeoLimited() {
+         _parseFlickrByApi('text',false)
+    }
+
+    private _parseFlickrByApi(def searchField , boolean needGeo) {
          if(isRunning2==false){
             isRunning2 = true;
             println("------------------------------ exec flickrByTagSearch2 -------------------")
-            def twPlaceId = getPlaceId('taiwan')
+
             //Emotion.list(sort: "id", order: "desc").each{ emotion->
             Emotion.createCriteria().list{
                 order("intensity","desc")
             }.each{ emotion->
-                //println " proc ${emotion} = ${emotion.intensity}"
+                println " proc ${emotion.name} = ${emotion.intensity}"
 //             Emotion.findAll("from Emotion as b order by DESC").each{ emotion ->
                     try{
                         int page = 1
                         int maxPage = -1
                         while(page<=maxPage||maxPage==-1){
-                            def rp =  "${FLICKR_SITE}?method=flickr.photos.search&format=json&nojsoncallback=1&has_geo=true&" +
-                                               "place_id=${twPlaceId}&api_key=${FLICKR_KEY}&${searchField}=${emotion.name}&page=${page}&"+
+                            def rp = ""
+                            if(needGeo)
+                                rp =  "${FLICKR_SITE}?method=flickr.photos.search&format=json&nojsoncallback=1&has_geo=true&" +
+                                               "place_id=${getPlaceId('taiwan')}&api_key=${FLICKR_KEY}&${searchField}=${emotion.name}&page=${page}&"+
+                                               "extras=geo%2Ctags%2Cdate_taken%2Cdescription%2C"
+                            else
+                                rp =  "${FLICKR_SITE}?method=flickr.photos.search&format=json&nojsoncallback=1&has_geo=true&" +
+                                               "api_key=${FLICKR_KEY}&${searchField}=${emotion.name}&page=${page}&"+
                                                "extras=geo%2Ctags%2Cdate_taken%2Cdescription%2C"
                            // println rp
                             if(maxPage==-1)
                                 maxPage = _listParseFromFlickrApi(rp,emotion)
                             else
                                 _listParseFromFlickrApi(rp,emotion)
-                            page++
                             println "@@@@@@@@@ ${page} / ${maxPage}"
+                            page++
+                            
                         }
                     }catch(Exception e){ println e }
             }
@@ -237,7 +248,6 @@ class ParserService {
     def getCurrentPhotos() {
          if(isRunning2==false){
             isRunning2 = true;
-          
             try{
                 int page = 1
                 int maxPage = -1
