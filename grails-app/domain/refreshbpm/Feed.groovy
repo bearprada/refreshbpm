@@ -13,6 +13,7 @@ class Feed {
     String imageThumbnailPath
     String sourcePath
     String flickrPhotoId
+    String tweetId
 
     // Personal info (ex. facebook, twitter, flickr ...) the different service will get the different result
     String userId
@@ -47,6 +48,7 @@ class Feed {
         socialMedia(nullable:true)
         imagePath(nullable:true)
         flickrPhotoId(nullable:true)
+        tweetId(nullable:true)
         userId(nullable:true)
         job(nullable:true)
         country(nullable:true)
