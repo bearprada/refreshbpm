@@ -383,8 +383,8 @@ class FacebookParserService {
                         def s = FACEBOOK_SEARCH_URL + "?type=post&q=${emotion.name}" 
                         while(hasNext){
                             def d = connect(s)
-                            println "[GET PUBLIC POST] ${s} num : ${d.data.size()}"
-                            d.data.each{
+                            println "[GET PUBLIC POST] ${s} num : ${d.data?.size()}"
+                            d.data?.each{
                                 try{
                                     _saveFeed(it,emotion)
                                 }catch(Exception e){
