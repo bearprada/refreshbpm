@@ -345,9 +345,6 @@ class FacebookParserService {
         return resultFeed.paging.next
 
     }
-
-	
-	
 	
     private def connect(String url){
         DefaultHttpClient httpclient = new DefaultHttpClient()
@@ -367,5 +364,91 @@ class FacebookParserService {
         return date.getTime()
     }
 
+    private static String FACEBOOK_SEARCH_URL = "https://graph.facebook.com/search"
+    private static boolean isWorking = false
+    private static final MAX_PER_REQUEST = 20
+    private Random random = new Random()
 
+///q=%E9%96%8B%E5%BF%83&type=post
+    def getPublicPost() {
+         if(isWorking==false){
+            isWorking = true
+            try{
+                for(int i=0;i<MAX_PER_REQUEST;i++){  /** becuase the twitter has limit for request 180/windows?! */
+                    int randomId = random.nextInt(Emotion.count)
+                    def emotion = Emotion.get(randomId)
+                   // def emotion = Emotion.get(1)
+                    if(emotion != null){
+                        boolean hasNext = true
+                        def s = FACEBOOK_SEARCH_URL + "?type=post&q=${emotion.name}" 
+                        while(hasNext){
+                            def d = connect(s)
+                            println "[GET PUBLIC POST] ${s} num : ${d.data.size()}"
+                            d.data.each{
+                                try{
+                                    _saveFeed(it,emotion)
+                                }catch(Exception e){
+                                    println "[Exception] ${e}"
+                                }
+                            }
+                            //println "[PAGING] ${d.paging}"
+                            if(d.paging!=null){
+                                //FIXME the chinese query will error after translate into unicode
+                                s = FACEBOOK_SEARCH_URL + "?type=post&q=${emotion.name}&until="+ getNextUrl(d.paging.next)
+                            }else{
+                                hasNext = false
+                            }
+                        }
+                    }
+                }
+                isWorking = false
+            }catch(Exception e){ 
+                println e
+                isWorking = false 
+            }
+        }
+    }
+
+    private String getNextUrl(def next){
+        return next[(next.indexOf("until=")+6)..-1]
+    }
+
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ",Locale.ENGLISH)
+    private Date string2date(String d){
+        return sdf.parse(d);
+    }
+    //"2012-11-04T03:35:03+0000"
+
+    private void _saveFeed(def f , def emotion ){
+        def feed = Feed.findByFacebookId(f.id)
+       // println "[PROC FACEBOOK PUBLIC] ${f}"
+                if(feed == null){
+                    feed = new Feed()
+                    feed.facebookId = f.id
+                    feed.title = f.caption
+                    feed.content = f.message
+                    feed.publishTime = string2date(f.created_time).getTime()
+                    feed.userId = f.from.id
+                    feed.imagePath = (f.picture == null) ? "" : f.picture
+                    feed.sourcePath= (f.link == null) ? "" : f.link
+                    feed.imageThumbnailPath= (f.picture == null) ? "" : f.picture //TODO replace by facebook user icon
+                    
+                  //  feed.lat= f.latitude
+                  //  feed.lng= f.longitude
+                    // Process locaiton data
+                   // def locationInfo = r.owner.location //TODO
+                    if(emotion!=null){
+                        feed.mostEmotion = emotion
+                        feed.addToEmotions(emotion)
+                    }
+                    feed.save(flush:true)
+                    println " @@@@@@@@@@@@@@@@@@@ feed " + feed
+                    if (feed.hasErrors())
+                        feed.errors.each { println it }
+                    else
+                        new FeedEmtionMapped(feed:feed,emotion:emotion).save()
+                }else{
+                    println "This photo is already in database!!!"
+                }// end if
+    }
 }

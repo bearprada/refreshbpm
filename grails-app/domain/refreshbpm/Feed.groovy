@@ -13,6 +13,7 @@ class Feed {
     String imageThumbnailPath
     String sourcePath
     String flickrPhotoId
+    String facebookId
     String tweetId
 
     // Personal info (ex. facebook, twitter, flickr ...) the different service will get the different result
@@ -56,6 +57,7 @@ class Feed {
         address(nullable:true)
         mostEmotion(nullable:true)
         facebookUser(nullable:true)
+        facebookId(nullable:true)
     }
 
     static mapping = {
