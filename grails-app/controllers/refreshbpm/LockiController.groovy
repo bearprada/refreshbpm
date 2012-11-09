@@ -7,7 +7,7 @@ class LockiController {
 
     def treemap() {}
 
-    def treemapsvg(){}
+    def treemapsvg(){ [total_emotion:Feed.count] }
 
     def reel() {}
 

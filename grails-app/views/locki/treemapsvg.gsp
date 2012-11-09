@@ -112,5 +112,7 @@ function zoom(d) {
 
     </script>
 
+
+</h3>We get the ${total_emotion} emotions in the world :) </h3>
   </body>
 </html>

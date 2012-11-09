@@ -25,7 +25,7 @@ svg {
 
 var margin = {top: 120, right: 60, bottom: 60, left: 60},
     width = 1280 - margin.right - margin.left,
-    height = 720 - margin.top - margin.bottom;
+    height = 920 - margin.top - margin.bottom;
 
 var x = d3.time.scale()
     .range([0, width - 60]);
