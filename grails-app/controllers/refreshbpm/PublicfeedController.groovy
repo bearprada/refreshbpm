@@ -2,7 +2,6 @@ package refreshbpm
 
 import grails.converters.JSON
 import java.text.SimpleDateFormat
-import java.text.SimpleDateFormat
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
 
 class PublicfeedController {
@@ -187,7 +186,7 @@ def changeEmptionGroup(){
 				imageThumbnailPathList.add(f[2])
 			intensityList.add(f[4])
 		}
-		println "titleList___"+titleList
+		//println "titleList___"+titleList
 		def ret=[]
 		def eg = EmotionGroup.get(Long.parseLong(params.emotionGroupNameId))
 		ret.add("titleList":titleList, 
