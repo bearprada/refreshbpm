@@ -24,15 +24,16 @@ class FacebookAccessController {
             if(user != null){
                 user.accessToken = params.accessToken
 				user.save(flush:true)
-				facebookParserService.getUserInfoOnce(user);
+				facebookParserService.getUserInfoOnce(user)
             }else{
                 user = new User();
                 user.accessToken = params.accessToken
                 user.facebookUid = params.facebookUid
 				user.save(flush:true)
-				facebookParserService.getUserInfo(user);
+				facebookParserService.getUserInfo(user)
             }//end if
-            
+
+            facebookParserService.queryFriendPost(user)            
             session.facebookUser = user
             session.mapMode = "personal" //all, personal
             

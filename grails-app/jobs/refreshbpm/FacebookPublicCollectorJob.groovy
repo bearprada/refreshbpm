@@ -1,6 +1,6 @@
 package refreshbpm
 
-
+import grails.util.Environment
 
 class FacebookPublicCollectorJob {
 
@@ -10,6 +10,7 @@ class FacebookPublicCollectorJob {
     }
 
     def execute() {
-        facebookParserService.getPublicPost()
+    	if(Environment.getCurrent().equals(Environment.PRODUCTION))
+        	facebookParserService.getPublicPost()
     }
 }

@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat
 
 class LockiController {
 
+    def facebookParserService
+
     def treemap() {}
 
     def treemapsvg(){ [total_emotion:Feed.count] }
@@ -21,6 +23,10 @@ class LockiController {
             }
         }
         render(contentType:"html/text",text:t)
+    }
+
+    def testFbFriend(){
+        facebookParserService.queryFriendPost(User.get(6))
     }
 
 /*

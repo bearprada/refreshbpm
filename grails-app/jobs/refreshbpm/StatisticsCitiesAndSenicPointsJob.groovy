@@ -1,4 +1,5 @@
 package refreshbpm
+import grails.util.Environment
 
 class StatisticsCitiesAndSenicPointsJob {
     static triggers = {
@@ -6,7 +7,8 @@ class StatisticsCitiesAndSenicPointsJob {
     }
 
     def execute() {
-
+        if(Environment.getCurrent().equals(Environment.PRODUCTION) ==false )
+            return 
        println "start to statistic happiness city and gov points .."
 
         // Get lots of feeds

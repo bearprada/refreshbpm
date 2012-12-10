@@ -14,73 +14,114 @@ class FacebookParserService {
     private static String mefeedApi   = "https://graph.facebook.com/me/posts?limit=400&access_token="
     private static String photoApi    = "https://graph.facebook.com/me/photos?limit=400&access_token="
     private static String checkinApi  = "https://graph.facebook.com/me/checkins?limit=400&access_token="
+    private static String fqlApi = "https://graph.facebook.com/fql"
 
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+0000'")
 
     def backgroundService
     def emotionDetectorService
 
-
 	def getUserInfoOnce(user){
-	
         backgroundService.execute("Get user facebook info once", {
-
                 println "Start to background Service for user: ${user.id}"
-
                 String apiMe =  mefeedApi + user.accessToken
                 String apiPhoto =  photoApi + user.accessToken
 				String apiCheckin = checkinApi + user.accessToken
 				queryAndStoreMeFeed(apiMe, user)
 				queryAndStoreMePhotos(apiPhoto, user)
 				queryAndStoreMeCheckins(apiCheckin, user)
-
             })
-	
 	}
-	
+
+    def queryFriendPost(user){
+        backgroundService.execute("Get user's friend facebook info.", {
+                // TODO select caption,src,src_big,created from photo where caption!='' AND owner IN (select uid2 from friend where uid1=me()) limit 1
+                
+           
+        def accessToken = user.accessToken
+
+        println "[queryFriendPost] start ${user}"
+            //def fqlQuery = '{"friends": "select uid2 from friend where uid1=me()",'+ \
+            //               '"photos" : "select caption,src,src_big,owner,created from photo where caption!="" AND owner IN (select uid2 from #friends)"}'
+            def fbOffset = 10
+            (0..100).each { 
+                def fqlQuery = "select caption,src,src_big,owner,created,object_id from photo where caption!='' AND owner IN (select uid2 from friend where uid1=me() limit "+fbOffset+" offset "+(it*fbOffset)+")"
+                println "[queryFriendPost] fql = ${fqlQuery}"
+                def rj = connect(fqlApi+"?q="+fqlQuery.encodeAsURL()+"&access_token="+accessToken)
+                // TODO save the relationship of friends
+                println "[queryFriendPost] result : " + rj?.data?.size()
+                rj?.data?.each{
+                    try{
+                        def feed = Feed.findByFacebookId(it.object_id)
+                        if(feed==null){
+                            //println "[queryFriendPost] row : " + it
+                            def emotion = emotionDetectorService.analyser(it.caption)
+                            //def emotion = null // TODO close
+                            feed = new Feed();
+                            feed.sourcePath = it.src_big
+                            feed.imageThumbnailPath = it.src
+                            feed.title =  it.owner
+                            feed.content =  it.caption
+                            feed.publishTime = it.created*1000.0f
+                            feed.imagePath = it.src_big
+                            feed.facebookId = it.object_id
+                             
+                            // Save feed
+                            if(emotion!=null){
+                                feed.mostEmotion = emotion
+                                feed.addToEmotions(emotion)
+                            }
+                            feed.type = 0;
+                            feed.facebookUser = user
+                            feed.save(flush:true)
+                            println "feed save ${feed}"
+                            if (feed.hasErrors())
+                                feed.errors.each { println it }
+                            else if(emotion!=null)
+                                new FeedEmtionMapped(feed:feed,emotion:emotion).save()
+                        }else{
+                            //println "already have : ${feed}"
+                        }
+                    }catch(Exception e){}
+                }
+            }
+            println "[queryFriendPost] end"
+        })
+    }
 	
     def getUserInfo(user){
-
         backgroundService.execute("Get user facebook info", {
-
-                println "Start to background Service for user: ${user.id}"
-
-                String apiMe =  mefeedApi + user.accessToken
-                String apiPhoto =  photoApi + user.accessToken
+        println "Start to background Service for user: ${user.id}"
+        String apiMe =  mefeedApi + user.accessToken
+        String apiPhoto =  photoApi + user.accessToken
 		String apiCheckin = checkinApi + user.accessToken
-				
-				
-                def next = queryAndStoreMeFeed(apiMe, user)
-                while(next != ""){
+
+		def next = queryAndStoreMeFeed(apiMe, user)
+        while(next != ""){
                     String apiMe2 = next
                     next = queryAndStoreMeFeed(apiMe2, user)
-                }// end while
+        }// end while
 
-                def next2 = queryAndStoreMePhotos(apiPhoto, user)
-                while(next2 != ""){
+        def next2 = queryAndStoreMePhotos(apiPhoto, user)
+        while(next2 != ""){
                     String apiPhoto2 = next2
                     next2 = queryAndStoreMePhotos(apiPhoto2, user)
-                }// end while
+        }// end while
 
-                def next3 = queryAndStoreMeCheckins(apiCheckin, user)
+        def next3 = queryAndStoreMeCheckins(apiCheckin, user)
                 while(next3 != ""){
                     String apiCheckin2 = next3
                     next3 = queryAndStoreMeCheckins(apiCheckin2, user)
-                }// end while
+        }// end while
 
-            })
-
-
+        })
     }
   
     private def queryAndStoreMeFeed(apiMe, user){
-        
-        
-        println "queryAndStoreMeFeed: " + apiMe
-        
+        //println "queryAndStoreMeFeed: " + apiMe
         def resultFeed = connect(apiMe)
         def resultFeedData = resultFeed.data
-        println "result data: " + resultFeedData
+        //println "result data: " + resultFeedData
 
         if(resultFeedData!=null){
 
@@ -88,12 +129,11 @@ class FacebookParserService {
 
                     // Make sure post come from user and not duplicate
                     def mefeed = Feed.findByFlickrPhotoId(resultFeedData[i].id)
-                    println "mefeed is null or not: " + mefeed;
+                    //println "mefeed is null or not: " + mefeed;
                     //def from = resultFeedData[i].from.id
                     //println resultFeedData[i].from.id
 
                     if( mefeed == null){
-
                         if(resultFeedData[i].message != null && resultFeedData[i].message != "null" &&
                             resultFeedData[i].message != ""){
 
@@ -106,6 +146,7 @@ class FacebookParserService {
                                 mefeed.flickrPhotoId = resultFeedData[i].id
 
                                 // Save title and content
+                                /*
                                 println "name:" + resultFeedData[i].name
                                 println "message:" + resultFeedData[i].message
                                 println "description:" + resultFeedData[i].description
@@ -114,7 +155,7 @@ class FacebookParserService {
                                 println "picture source: " + resultFeedData[i].source
                                 println "link:" + resultFeedData[i].link
                                 println "place:" + resultFeedData[i].place
-
+                                */
 
                                 if(resultFeedData[i].name!=null)
                                 mefeed.title =  resultFeedData[i].name
@@ -167,30 +208,24 @@ class FacebookParserService {
 
 
         if(resultFeed.paging == null || resultFeed.paging == "" || resultFeed.paging == "undefined")
-        return ""
+            return ""
         else
-        return resultFeed.paging.next
+            return resultFeed.paging.next
 
     }
 
 	 
 	
     private def queryAndStoreMePhotos(apiMe, user){
-        
-        
-        println "queryAndStoreMePhotos: " + apiMe
-        
+        //println "queryAndStoreMePhotos: " + apiMe
         def resultFeed = connect(apiMe)
         def resultFeedData = resultFeed.data
-        println "result data: " + resultFeedData
-        
+        //println "result data: " + resultFeedData
         if(resultFeedData!=null){
-
                 for(int i=0;i<resultFeedData.size();i++){
-
                     // Make sure post come from user and not duplicate
                     def mefeed = Feed.findByFlickrPhotoId(resultFeedData[i].id)
-                    println "mefeed is null or not: " + mefeed;
+                    //println "mefeed is null or not: " + mefeed;
                     if( mefeed == null){
 
                         if(resultFeedData[i].name != null && resultFeedData[i].name != "null" &&
@@ -269,11 +304,11 @@ class FacebookParserService {
     private def queryAndStoreMeCheckins(apiMe, user){
         
         
-        println "queryAndStoreMeCheckins: " + apiMe
+       // println "queryAndStoreMeCheckins: " + apiMe
         
         def resultFeed = connect(apiMe)
         def resultFeedData = resultFeed.data
-        println "result data: " + resultFeedData
+        //println "result data: " + resultFeedData
 
         if(resultFeedData!=null){
 
@@ -281,7 +316,7 @@ class FacebookParserService {
 
                     // Make sure post come from user and not duplicate
                     def mefeed = Feed.findByFlickrPhotoId(resultFeedData[i].id)
-                    println "mefeed is null or not: " + mefeed;
+                    //println "mefeed is null or not: " + mefeed;
                     if( mefeed == null){
 
                         if(resultFeedData[i].message != null && resultFeedData[i].message != "null" &&

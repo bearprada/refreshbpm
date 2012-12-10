@@ -1,6 +1,6 @@
 package refreshbpm
 
-
+import grails.util.Environment
 
 class ParseTagJob {
   static triggers = {
@@ -10,9 +10,7 @@ class ParseTagJob {
     def parserService
 
     def execute() {
-    	println "execute job"
-     	parserService.parseFlickrNoGeoLimited()
-     	
-    	//parserService.flickrByTagSearch2()
+    	if(Environment.getCurrent().equals(Environment.PRODUCTION) )
+     	    parserService.parseFlickrNoGeoLimited()
     }
 }

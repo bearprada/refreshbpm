@@ -1,6 +1,6 @@
 package refreshbpm
 import grails.converters.*;
-
+import grails.util.Environment
 class LocationQueryJob {
     static triggers = {
       // The total times of geocoder query, since google api has some limitation (query three record by once)
@@ -9,8 +9,10 @@ class LocationQueryJob {
     }
 
     def execute() {
-        println "start to location query job .."
+        if(Environment.getCurrent().equals(Environment.PRODUCTION) ==false )
+            return
 
+        println "start to location query job .."
         //Get the latest location record
         def fd = Feed.createCriteria();
         def feeds = fd.list{
